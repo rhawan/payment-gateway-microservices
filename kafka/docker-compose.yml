@@ -1,23 +1,12 @@
-version: "3"
-
+version: '3'
 services:
-  app:
-    container_name: goapp
-    build: .
-    volumes:
-      - .:/go/src/
-    extra_hosts:
-      - "host.docker.internal:172.17.0.1"
-
   zookeeper:
     image: confluentinc/cp-zookeeper:latest
-    container_name: zookeeper
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
 
   kafka:
     image: confluentinc/cp-kafka:5.4.1
-    container_name: kafka
     depends_on:
       - zookeeper
     ports:
@@ -35,20 +24,18 @@ services:
       - "host.docker.internal:172.17.0.1"
 
   kafka-topics-generator:
-    image: confluentinc/cp-kafka:latest
-    container_name: kafka-topics-generator
+    image: confluentinc/cp-kafka:5.4.1
     depends_on:
       - kafka
     command: >
       bash -c
         "sleep 5s &&
-        kafka-topics --create --topic=transactions --if-not-exists --bootstrap-server=kafka:9092 && 
-        kafka-topics --create --topic=transactions_result --if-not-exists --bootstrap-server=kafka:9092"
+        kafka-topics --create --topic=transactions --bootstrap-server=kafka:9092 && 
+        kafka-topics --create --topic=transactions_result --bootstrap-server=kafka:9092"
         
   control-center:
     image: confluentinc/cp-enterprise-control-center:6.0.1
     hostname: control-center
-    container_name: control-center
     depends_on:
       - kafka
     ports:
@@ -57,3 +44,12 @@ services:
       CONTROL_CENTER_BOOTSTRAP_SERVERS: 'kafka:9092'
       CONTROL_CENTER_REPLICATION_FACTOR: 1
       PORT: 9021
+
+  kafdrop:
+    image: obsidiandynamics/kafdrop:latest
+    depends_on:
+      - kafka
+    ports:
+      - 19000:9000
+    environment:
+      KAFKA_BROKERCONNECT: kafka:9092
